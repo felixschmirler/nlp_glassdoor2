@@ -112,7 +112,7 @@ reviews <- tibble(
   )
 
 #scraping glasdoor pages
-company <- readline(prompt="Please enter the name of the company you want to scrape reviews from (PRH, BBC or Pearson): ")
+company <- readline(prompt="Please enter the name of the company you want to scrape reviews from (PRH, BBC or Pearson, Netflix): ")
 Sys.sleep(2)
 
 if (company == "PRH") {
@@ -160,7 +160,7 @@ Pearson <- read.csv("Pearson_reviews_raw.csv") %>%
   mutate(company = "Pearson")
 
 Netflix <- read.csv("Netflix_reviews_raw.csv") %>%
-  mutate(company = "Pearson")
+  mutate(company = "Netflix")
 
 gd <- rbind(PRH, BBC, Pearson, Netflix)
 
