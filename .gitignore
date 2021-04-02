@@ -1,3 +1,4 @@
 *.Rhistory
 *.txt
-.Rproj.user
+*.Rproj.user
+*.pptx
