@@ -132,18 +132,18 @@ remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/Penguin-Random-House-
 Sys.sleep(2)
 
 #loop to scrape all reviews
-while (remDr$findElements("css", ".pagination__ArrowStyle__nextArrow") %>% length() > 0) {
+while (remDr$findElements("css", ".nextButton") %>% length() > 0) {
   current <- remDr$getPageSource()[[1]]
   reviews <- rbind(reviews, scrape_gd(current))
-  remDr$findElement("css", ".pagination__ArrowStyle__nextArrow")$sendKeysToElement(list(key="enter"))
+  remDr$findElement("css", ".nextButton")$sendKeysToElement(list(key="enter"))
   Sys.sleep(sample(seq(1, 2, by = 0.01), 1))
-  if (remDr$findElements("css", ".pagination__ArrowStyle__nextArrow") %>% length() == 0) {
+  if (remDr$findElements("css", ".nextButton") %>% length() == 0) {
     remDr$refresh()
     Sys.sleep(sample(seq(2, 3, by = 0.01), 1))
   }
 }
 
-write.csv(reviews, "reviews_raw.csv")
+ write.csv(reviews, "reviews_raw.csv")  
 
 #close session 
 remDr$close()

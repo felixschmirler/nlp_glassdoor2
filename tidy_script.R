@@ -5,17 +5,21 @@ library(lubridate)
 library(magrittr)
 
 #load data
-PRH <- read.csv("PRH_reviews_raw.csv") %>%
-  mutate(company = "PRH")
+PRH <- read.csv("reviews_raw_PRH.csv") %>%
+  mutate(company = "PRH") %>%
+  distinct()
 
-BBC <- read.csv("BBC_reviews_raw.csv") %>%
-  mutate(company = "BBC")
+BBC <- read.csv("reviews_raw_BBC.csv") %>%
+  mutate(company = "BBC") %>%
+  distinct()
 
-Pearson <- read.csv("Pearson_reviews_raw.csv") %>%
-  mutate(company = "Pearson")
+Pearson <- read.csv("reviews_raw_Pearson.csv") %>%
+  mutate(company = "Pearson") %>%
+  distinct()
 
-Netflix <- read.csv("Netflix_reviews_raw.csv") %>%
-  mutate(company = "Netflix")
+Netflix <- read.csv("reviews_raw_Netflix.csv") %>%
+  mutate(company = "Netflix") %>%
+  distinct()
 
 gd <- rbind(PRH, BBC, Pearson, Netflix)
 
@@ -59,7 +63,7 @@ gd %<>%
     helpful = ifelse(is.na(helpful), 0, helpful)
   ) 
 
-write.csv(gd, "reviews_clean.csv")
+write.csv(gd, "reviews_clean.csv", row.names = FALSE)
 
 
 
