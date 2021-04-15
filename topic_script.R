@@ -16,6 +16,7 @@ library(tm)
 library(quanteda)
 library(lexicon)
 library(ldatuning)
+library(magrittr)
 
 #load data
 gd <- read.csv("reviews_clean.csv") %>% 
@@ -71,7 +72,6 @@ gd %>%
   facet_grid(company ~ name, scales = "free_y") +
   theme(legend.position = "none")
 
-
 #Explore relationship between subratings and main rating
 cor_gd <- cor(drop_na(gd[c("rating", "work_life_balance", "culture_values", "career_opportunities", "compensation_benefits", "senior_management")]))
 corrplot.mixed(cor_gd)
@@ -79,45 +79,75 @@ corrplot.mixed(cor_gd)
 #tidy pros and cons for text analysis
 pros_cons <- gd %>%
   select(id, company, pros, cons) %>%
-  pivot_longer(c(pros, cons), names_to = "pros_cons", values_to = "text")
+  pivot_longer(c(pros, cons), names_to = "pros_cons", values_to = "text") %>% 
+  mutate(
+    nwords = str_count(text,  "\\S+")
+  )
+
+pros_cons %>%
+  ggplot(aes(nwords)) +
+  geom_histogram()
+
+sum(pros_cons$nwords)
 
 pros_cons2 <- pros_cons %>% 
   mutate(
     text_clean = str_squish(text) %>% 
+      str_replace_all("`|´|’", "'") %>% 
       replace_contraction() %>%
       str_to_lower() %>%
-      str_remove_all("[0-9]") %>%
-      lemmatize_strings()
+      lemmatize_strings() %>% 
+      str_replace_all("free book", "free_book") %>% 
+      str_replace_all("work life balance|work / life balance|work - life balance", "work_life_balance") %>%
+      str_replace_all("upper managment|senior management|top management", "senior_management") %>%
+      str_remove_all("[0-9]")  
   ) 
   
 
-undesirable_words <- c("penguin", "random", "house", "pearson", "bbc", "netflix")
+undesirable_words <- c("prh", "penguin", "random", "house", "pearson", "bbc", "netflix", "education", "technology", "publish")
 
 pros_cons3a <- pros_cons2 %>%
   unnest_tokens(word, text_clean) %>%
-  anti_join(stop_words) %>%
-  distinct() %>%
+  anti_join(stop_words) %>% 
+  #distinct() %>%
   filter(!word %in% undesirable_words)
 
-pros_cons3b <- pros_cons2 %>%
-  unnest_tokens(word, text_clean, token = "ngrams", n = 2)
-
-pros_cons3c <- pros_cons2 %>%
-  unnest_tokens(word, text_clean, token = "ngrams", n = 3)
-
-pros_cons3 <- rbind(pros_cons3a, pros_cons3b, pros_cons3c) 
-
-pros_cons4 <- pros_cons3 %>% 
-  mutate(
-    word = recode(word, 
-                  "salary" = "pay",
-                  "wage" = "pay",
-                  "advancement" = "progression")
+low_occurence <- pros_cons3a %>%
+  group_by(pros_cons, word) %>%
+  summarise(
+    n = n()
   ) %>%
-  group_by(company, word, pros_cons) %>%
-  summarise(occurrences = n()) %>%
-  ungroup() %>% 
-  filter(occurrences > 10) 
+  filter(n < 10) %>%
+  select(word) 
+
+pros_cons3a %<>% anti_join(low_occurence) 
+
+#pros_cons3b <- pros_cons2 %>%
+#  unnest_tokens(word, text_clean, token = "ngrams", n = 2)
+#pros_cons3b %>% 
+#  group_by(word) %>%
+#  summarise(
+#    n = n()
+#  ) %>%
+#  view()
+
+
+#pros_cons3c <- pros_cons2 %>%
+#  unnest_tokens(word, text_clean, token = "ngrams", n = 3)
+
+#pros_cons3 <- rbind(pros_cons3a, pros_cons3b, pros_cons3c) 
+
+#pros_cons4 <- pros_cons3 %>% 
+#  mutate(
+#    word = recode(word, 
+#                  "salary" = "pay",
+#                  "wage" = "pay",
+#                  "advancement" = "progression")
+#  ) %>%
+#  group_by(company, word, pros_cons) %>%
+#  summarise(occurrences = n()) %>%
+#  ungroup() %>% 
+ # filter(occurrences > 10) 
   
 
 #LDA ####
@@ -152,120 +182,187 @@ dtm <- cast_dtm(lda_data, document, word, n)
 dtm_pros <- cast_dtm(lda_data_pros, document, word, n) 
 dtm_cons <- cast_dtm(lda_data_cons, document, word, n) 
 
-result <- FindTopicsNumber(
-  dtm,
-  topics = seq(from = 2, to = 50, by = 1),
-  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
-  method = "Gibbs",
-  control = list(seed = 77),
-  mc.cores = NA,
-  verbose = TRUE
-)
+#result <- FindTopicsNumber(
+#  dtm,
+#  topics = seq(from = 2, to = 30, by = 1),
+#  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+#  method = "Gibbs",
+#  control = list(seed = 77),
+#  mc.cores = NA,
+#  verbose = TRUE
+#)
 
-FindTopicsNumber_plot(result)
+#FindTopicsNumber_plot(result)
 
-result_pros <- FindTopicsNumber(
-  dtm_pros,
-  topics = seq(from = 2, to = 50, by = 1),
-  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
-  method = "Gibbs",
-  control = list(seed = 77),
-  mc.cores = NA,
-  verbose = TRUE
-)
+#result_pros <- FindTopicsNumber(
+#  dtm_pros,
+#  topics = seq(from = 2, to = 30, by = 1),
+#  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+#  method = "Gibbs",
+#  control = list(seed = 77),
+#  mc.cores = NA,
+#  verbose = TRUE
+#)
 
-FindTopicsNumber_plot(result_pros)
+#FindTopicsNumber_plot(result_pros)
 
-result_cons <- FindTopicsNumber(
-  dtm_cons,
-  topics = seq(from = 2, to = 50, by = 1),
-  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
-  method = "Gibbs",
-  control = list(seed = 77),
-  mc.cores = NA,
-  verbose = TRUE
-)
+#result_cons <- FindTopicsNumber(
+# dtm_cons,
+#  topics = seq(from = 2, to = 30, by = 1),
+#  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+#  method = "Gibbs",
+#  control = list(seed = 77),
+#  mc.cores = NA,
+#  verbose = TRUE
+#)
 
-FindTopicsNumber_plot(result_cons)
+#FindTopicsNumber_plot(result_cons)
 
-lda <- LDA(dtm, k = 14, method = "GIBBS", control = list(seed = 1234))
+lda <- LDA(dtm, k = 7, method = "GIBBS", control = list(seed = 1234)) #7 or 11  
 terms(lda, 30) %>% view()
 perplexity(lda, dtm)
+topicmodels::logLik(lda)
 
-lda_pros <- LDA(dtm_pros, k = 5, method = "GIBBS", control = list(seed = 1234))
+lda_pros <- LDA(dtm_pros, k = 4, method = "GIBBS", control = list(seed = 1234)) #4 OR 5 
 terms(lda_pros, 30) %>% view()
 perplexity(lda_pros, dtm_pros)
+topicmodels::logLik(lda_pros)
 
-lda_cons <- LDA(dtm_cons, k = 3, method = "GIBBS", control = list(seed = 1234))
-terms(lda_cons, 30) %>% view()
+lda_cons <- LDA(dtm_cons, k = 3, method = "GIBBS", control = list(seed = 1234)) #4 OR 3
+terms(lda_cons, 40) %>% view()
 perplexity(lda_cons, dtm_cons)
+topicmodels::logLik(lda_cons)
 #topics(lda) 
 
-lda_beta <- tidy(lda, matrix = "beta")
-lda_gamma <- tidy(lda, matrix = "gamma") 
-
-lda_beta %>%
+#Explore LDA Topics
+betas_pros <- tidy(lda_pros, matrix = "beta")
+pros_top_terms <- betas_pros %>%
   group_by(topic) %>%
-  slice_max(order_by = beta, n = 10) %>% view()
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+pros_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
 
-lda_gamma %>% view()
+betas_cons <- tidy(lda_cons, matrix = "beta")
+cons_top_terms <- betas_cons %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+cons_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+
+gammas_pros <- tidy(lda_pros, matrix = "gamma")
+gammas_cons <- tidy(lda_cons, matrix = "gamma")
+gammas <- add_row(gammas_pros, gammas_cons)
+
+#Evaluating lda performance on data
+#augment(lda_pros, dtm_pros) %>% 
+  #group_by(term, .topic) %>% 
+  #summarise(n = n()) %>% 
+#  view()
+
+pros_cons_augmented <- pros_cons %>%
+  mutate(
+    document = paste0(id, "_", pros_cons)
+  ) %>% left_join(gammas) 
+
+pros_cons_augmented %>%
+  group_by(company, pros_cons, topic) %>%
+  summarise(
+    sum = sum(gamma)
+  ) %>% view()
+
+pros_cons_augmented_max <- pros_cons_augmented %>%
+  group_by(document, pros_cons) %>%
+  slice_max(gamma) %>%
+  ungroup()
+
+pros_cons_augmented_max %>% 
+  group_by(company, pros_cons, topic) %>%
+  summarise(
+    n = n()
+  ) %>% 
+  ungroup() %>%
+  group_by(company, pros_cons) %>%
+  mutate(
+    total = sum(n),
+    Percentage = round(n/total, 3)
+  ) %>%
+  ggplot(aes(topic, Percentage, fill = company)) +
+  geom_col() +
+  scale_y_continuous(labels = scales::percent_format()) +
+  geom_text(
+    aes(label = paste0(Percentage * 100, "%")),
+    colour="white"
+    ) +
+  facet_grid(company ~ pros_cons)
+
 
 #lda following quanteda preprocessing
-pros_corpus <- corpus(as.character(gd$pros))
-docnames(pros_corpus) <- paste0("pros", 1:ndoc(pros_corpus))
-docvars(pros_corpus, "type") <- rep("pros", ndoc(pros_corpus))
-summary(pros_corpus)
+#pros_corpus <- corpus(as.character(gd$pros))
+#docnames(pros_corpus) <- paste0("pros", 1:ndoc(pros_corpus))
+#docvars(pros_corpus, "type") <- rep("pros", ndoc(pros_corpus))
+#summary(pros_corpus)
 
-cons_corpus <- corpus(as.character(gd$cons))
-docvars(cons_corpus, "type") <- rep("cons", ndoc(cons_corpus))
-docnames(cons_corpus) <- paste0("cons", 1:ndoc(cons_corpus))
-summary(cons_corpus)
+#cons_corpus <- corpus(as.character(gd$cons))
+#docvars(cons_corpus, "type") <- rep("cons", ndoc(cons_corpus))
+#docnames(cons_corpus) <- paste0("cons", 1:ndoc(cons_corpus))
+#summary(cons_corpus)
 
-review_corpus <- c(pros_corpus,  cons_corpus)
+#review_corpus <- c(pros_corpus,  cons_corpus)
   
-summary(review_corpus) %>% head()
-kwic(review_corpus, "balance") %>% view()
-kwic(review_corpus, pattern = regex("growth")) %>% view()
-kwic(review_corpus, pattern = phrase("growth")) %>% view()
-corpus_subset(review_corpus, type == "pros")
-texts(review_corpus)[5793]
+#summary(review_corpus) %>% head()
+#kwic(review_corpus, "balance") %>% view()
+#kwic(review_corpus, pattern = regex("growth")) %>% view()
+#kwic(review_corpus, pattern = phrase("growth")) %>% view()
+#corpus_subset(review_corpus, type == "pros")
+#texts(review_corpus)[5793]
 
-corpus_df <- summary(review_corpus, n = ndoc(review_corpus))
-review_tokens <- tokens(lemmatize_strings(str_squish(char_tolower(replace_contraction(gd$pros)))), 
-                        remove_numbers = TRUE, 
-                        remove_punct = TRUE, 
-                        remove_separators = TRUE, 
-                        remove_symbols = TRUE,
-                        split_hyphens = TRUE,
-                        ) %>%
-  tokens_remove(stopwords("english"), padding  = TRUE) %>%
-  tokens_ngrams(n = 1:3)
+#corpus_df <- summary(review_corpus, n = ndoc(review_corpus))
+#review_tokens <- tokens(lemmatize_strings(str_squish(char_tolower(replace_contraction(gd$pros)))), 
+#                        remove_numbers = TRUE, 
+#                        remove_punct = TRUE, 
+#                        remove_separators = TRUE, 
+#                        remove_symbols = TRUE,
+#                        split_hyphens = TRUE,
+#                        ) %>%
+#  tokens_remove(stopwords("english"), padding  = TRUE) #%>%
+#  tokens_ngrams(n = 1:3)
 #  tokens_compound(pattern = phrase(c("very unlikely test expression", 
 #                                     "and another one"))) 
 #review_dfm <- tokens_replace(review_tokens, pattern = lexicon::hash_lemmas$token, replacement = lexicon::hash_lemmas$lemma) %>%
-review_dfm <- dfm(review_tokens) #%>% dfm_trim(min_termfreq = 0.99, termfreq_type = "quantile")
-review_dfm[, 1:10]
-topfeatures(review_dfm, n = 20)
-textplot_wordcloud(review_dfm[, 100:300], color = viridis(8))
-textplot_wordcloud()
+#review_dfm <- dfm(review_tokens) #%>% dfm_trim(min_termfreq = 0.99, termfreq_type = "quantile")
+#review_dfm[, 1:10]
+#topfeatures(review_dfm, n = 20)
+#textplot_wordcloud(review_dfm[, 100:300], color = viridis(8))
 
-review_dtm <- convert(review_dfm, to = "topicmodels")
+#review_dtm <- convert(review_dfm, to = "topicmodels")
 
-result2 <- FindTopicsNumber(
-  review_dtm,
-  topics = seq(from = 2, to = 50, by = 1),
-  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
-  method = "Gibbs",
-  control = list(seed = 77),
-  mc.cores = NA,
-  verbose = TRUE
-)
+#result2 <- FindTopicsNumber(
+#  review_dtm,
+#  topics = seq(from = 2, to = 50, by = 1),
+#  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+#  method = "Gibbs",
+#  control = list(seed = 77),
+#  mc.cores = NA,
+#  verbose = TRUE
+#)
   
-FindTopicsNumber_plot(result2)
+#FindTopicsNumber_plot(result2)
 
-review_lda <- LDA(review_dtm, k = 5, method = "GIBBS")
-terms(review_lda, 10)
-???Terms
+#review_lda <- LDA(review_dtm, k = 5, method = "GIBBS")
+#terms(review_lda, 10)
+#???Terms
 
 perplexity(review_lda)
 
@@ -385,7 +482,7 @@ pros_cons4 %>%
   scale_size_area(max_size = 20) 
 
 #LDA ####
-lda_data_pros <- pros_cons3a %>%
+lda_data_pros_prh <- pros_cons3a %>%
   filter(pros_cons == "pros", company == "PRH" ) %>%
   transmute(
     document = paste(id, pros_cons, sep = "_"),
@@ -394,7 +491,7 @@ lda_data_pros <- pros_cons3a %>%
   count(document, word, sort = TRUE) %>%
   ungroup() 
 
-lda_data_cons <- pros_cons3a %>%
+lda_data_cons_prh <- pros_cons3a %>%
   filter(pros_cons == "cons", company == "PRH" ) %>%
   transmute(
     document = paste(id, pros_cons, sep = "_"),
@@ -404,8 +501,8 @@ lda_data_cons <- pros_cons3a %>%
   ungroup() 
 
 #find best amount of topics
-dtm_pros <- cast_dtm(lda_data_pros, document, word, n) 
-dtm_cons <- cast_dtm(lda_data_cons, document, word, n) 
+dtm_pros_prh <- cast_dtm(lda_data_pros_prh, document, word, n) 
+dtm_cons_prh <- cast_dtm(lda_data_cons_prh, document, word, n) 
 
 result_pros <- FindTopicsNumber(
   dtm_pros,

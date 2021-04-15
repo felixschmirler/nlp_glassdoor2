@@ -143,7 +143,7 @@ while (remDr$findElements("css", ".nextButton") %>% length() > 0) {
   }
 }
 
- write.csv(reviews, "reviews_raw.csv")  
+write.csv(reviews, "reviews_raw.csv", row.names = FALSE)  
 
 #close session 
 remDr$close()
