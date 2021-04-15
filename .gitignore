@@ -1,7 +1,11 @@
 *.Rhistory
 *.txt
 *.Rproj.user
+*.RData
 *.Rproj
 *.pptx
 *.csv
 *.pdf
+.Rproj.user
+.RData
+
