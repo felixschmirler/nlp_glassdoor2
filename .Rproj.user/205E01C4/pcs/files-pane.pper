@@ -1,9 +1,0 @@
-{
-    "path" : "~/NLP/nlp_glassdoor2",
-    "sortOrder" : [
-        {
-            "ascending" : true,
-            "columnIndex" : 2
-        }
-    ]
-}
