@@ -91,9 +91,8 @@ scrape_gd <- function(current) {
   ) 
 }
 
-#test scrape page 3
+#test scrape a page
 #remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/Netflix-Reviews-E11891.htm?sort.sortType=RD&sort.ascending=false"))
-#remDr$executeScript("window.scrollTo(0, 1080);")
 #current <- remDr$getPageSource()[[1]]
 #scrape_gd(current) %>% view()
 #remDr$getCurrentUrl()
@@ -127,7 +126,25 @@ remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/Penguin-Random-House-
   remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/Pearson-Reviews-E3322_P1.htm?sort.sortType=RD&sort.ascending=false"))
 } else if (company == "Netflix") {
   remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/Netflix-Reviews-E11891.htm?sort.sortType=RD&sort.ascending=false"))
-}
+} else if (company == "Diageo") {
+  remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/Diageo-Reviews-E7438.htm?sort.sortType=RD&sort.ascending=false"))
+} else if (company == "AstraZeneca") {
+  remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/AstraZeneca-Reviews-E9214.htm?sort.sortType=RD&sort.ascending=false"))
+} else if (company == "GSK") {
+  remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/GlaxoSmithKline-Reviews-E3477.htm?sort.sortType=RD&sort.ascending=false"))
+} else if (company == "Unilever") {
+  remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/Unilever-Reviews-E3513.htm?sort.sortType=RD&sort.ascending=false"))
+} else if (company == "Viacom") {
+  remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/ViacomCBS-Reviews-E40260.htm?sort.sortType=RD&sort.ascending=false"))
+} else if (company == "Disney") {
+  remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/Walt-Disney-Company-Reviews-E717.htm?sort.sortType=RD&sort.ascending=false"))
+} else if (company == "Comcast") {
+  remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/Comcast-Reviews-E1280.htm?sort.sortType=RD&sort.ascending=false"))
+} else if (company == "NYT") {
+  remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/New-York-Times-Reviews-E960.htm?sort.sortType=RD&sort.ascending=false"))
+} else if (company == "NewsCorp") {
+  remDr$navigate(paste0("https://www.glassdoor.co.uk/Reviews/News-Corp-Reviews-E3493.htm?sort.sortType=RD&sort.ascending=false"))
+} 
 
 Sys.sleep(2)
 
